@@ -28,7 +28,7 @@ jobs:
       - name: Upload build airtifacts
         uses: actions/upload-artifact@v4 # ビルドまで行った状態をアップロードする
         with:
-          name: build-files
+          name: build-files # アップロードするファイルの名前
           path: dist/ # distフォルダにビルド済みのファイルを保存
           retention-days: 1 # アップロードしたファイルを1日間保存
 
@@ -53,3 +53,43 @@ jobs:
       - name: Run tests
         run: npm test # テストの実行
       
+  deploy:
+    name: Deploy Phase
+    runs-on: ubuntu-latest
+    needs: [build, test] # buildジョブとtestジョブが成功した後に実行
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cashe: 'npm'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4 # buildジョブでアップロードしたファイルをダウンロード
+        with:
+          name: build-files
+          path: dist/
+      
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools # Firebase CLIのインストール
+
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Prepare Google Application Credentials
+        run: |
+        echo ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }} | base64 --decode > $HOME/private-key.json # Firebaseデプロイ用のサービスアカウントキーを準備
+
+      - name: Deploy Firebase Hosting
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS="$HOME/private-key.json" # 環境変数にサービスアカウントキーのパスを設定
+          firebase experimnets:enable webframeworks # FirebaseのWeb Frameworks機能を有効化
+          firebase deploy --only hosting # Firebase Hostingへデプロイ
+      
+      - name: Remove private key
+        if : always()
+        run: rm $HOME/private-key.json # セキュリティのため、サービスアカウントキーを削除
