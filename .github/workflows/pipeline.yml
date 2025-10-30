@@ -87,7 +87,7 @@ jobs:
       - name: Deploy Firebase Hosting
         run: |
           export GOOGLE_APPLICATION_CREDENTIALS="$HOME/private-key.json" # 環境変数にサービスアカウントキーのパスを設定
-          firebase experimnets:enable webframeworks # FirebaseのWeb Frameworks機能を有効化
+          firebase experiments:enable webframeworks # FirebaseのWeb Frameworks機能を有効化
           firebase deploy --only hosting # Firebase Hostingへデプロイ
       
       - name: Remove private key
